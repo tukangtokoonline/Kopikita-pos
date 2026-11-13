@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>KopiKita POS & Management System</title>
     
-    <!-- SKRIP PEMBLOKIR TOTAL BADGE NETLIFY -->
+    <!-- SKRIP PEMBLOKIR TOTAL BADGE NETLIFY & CSS CETAK (PRINT) -->
     <style>
         #net-lify-badge, .netlify-badge, iframe[src*="netlify"], div[style*="z-index: 2147483647"], a[href*="netlify.com"] {
             display: none !important;
@@ -19,6 +19,23 @@
         .custom-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
         .custom-scroll::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
         .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+
+        /* PENGATURAN KHUSUS SAAT CETAK / PRINT STRUK */
+        @media print {
+            body * { visibility: hidden !important; }
+            #printableReceipt, #printableReceipt * { visibility: visible !important; }
+            #printableReceipt { 
+                position: absolute !important; 
+                left: 0 !important; 
+                top: 0 !important; 
+                width: 100% !important; 
+                border: none !important; 
+                background: white !important;
+                box-shadow: none !important;
+                margin: 0 !important;
+                padding: 10px !important;
+            }
+        }
     </style>
     <script>
         setInterval(() => {
@@ -140,7 +157,7 @@
                 </div>
                 <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
                     <div>
-                        <div class="text-xs text-slate-500 font-medium">Omzet Hari Ini</div>
+                        <div class="text-xs text-slate-500 font-medium">Omzet Shift Ini</div>
                         <div class="text-xl font-black text-teal-700" id="kasirTodayRevenue">Rp 0</div>
                     </div>
                     <div class="w-10 h-10 rounded-xl bg-teal-100 text-teal-700 flex items-center justify-center font-bold text-lg"><i class="fa-solid fa-wallet"></i></div>
@@ -154,15 +171,36 @@
                 </div>
             </div>
 
+            <!-- KOTAK PENGATURAN NAMA PETUGAS KASIR & TOMBOL RESET SHIFT -->
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-xl bg-teal-100 text-teal-700 flex items-center justify-center font-bold text-base"><i class="fa-solid fa-user-tie"></i></div>
+                    <div>
+                        <div class="text-xs text-slate-500 font-medium">Identitas Kasir Bertugas</div>
+                        <input type="text" id="cashierNameInput" oninput="saveCashierName(this.value)" placeholder="Nama Kasir..." class="text-xs font-bold text-slate-800 bg-transparent focus:outline-none border-b border-slate-300 pb-0.5 mt-0.5">
+                    </div>
+                </div>
+                <div>
+                    <button id="resetShiftBtn" onclick="handleResetShift()" class="px-3.5 py-2 bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-sm cursor-pointer">
+                        <i class="fa-solid fa-power-off"></i> <span id="resetBtnText">Reset Shift Kasir</span>
+                    </button>
+                </div>
+            </div>
+
             <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                 <div class="p-4 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50/50">
                     <div>
-                        <h3 class="font-bold text-base text-slate-900">Manajemen Pesanan Masuk</h3>
+                        <h3 class="font-bold text-base text-slate-900">Manajemen Pesanan Masuk (Shift Aktif)</h3>
                         <p class="text-xs text-slate-500">Konfirmasi pembayaran tunai & kelola status pesanan</p>
                     </div>
-                    <button onclick="loadDataFromGAS()" class="px-3 py-1.5 bg-white border border-slate-300 text-slate-700 rounded-lg text-xs font-semibold hover:bg-slate-50 transition flex items-center gap-1.5 shadow-sm">
-                        <i class="fa-solid fa-rotate"></i> Refresh Data Google Sheets
-                    </button>
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <button onclick="exportKasirCSV()" class="px-3 py-1.5 bg-emerald-700 text-white hover:bg-emerald-800 rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow-sm cursor-pointer">
+                            <i class="fa-solid fa-file-excel"></i> Export CSV Shift
+                        </button>
+                        <button onclick="loadDataFromGAS()" class="px-3 py-1.5 bg-white border border-slate-300 text-slate-700 rounded-lg text-xs font-semibold hover:bg-slate-50 transition flex items-center gap-1.5 shadow-sm cursor-pointer">
+                            <i class="fa-solid fa-rotate"></i> Refresh
+                        </button>
+                    </div>
                 </div>
                 <div class="p-4"><div id="kasirOrdersList" class="space-y-4"></div></div>
             </div>
@@ -462,7 +500,7 @@
 
     <!-- RECEIPT MODAL -->
     <div id="receiptModal" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 overflow-y-auto flex items-start justify-center p-2 sm:p-4 pb-48 hidden">
-        <div class="bg-white rounded-2xl max-w-md w-full my-6 mb-40 p-4 sm:p-6 shadow-2xl space-y-4 relative">
+        <div class="bg-white rounded-2xl max-w-md w-full my-6 mb-40 p-4 sm:p-6 shadow-2xl space-y-3 relative">
             <div id="printableReceipt" class="bg-amber-50/40 p-5 rounded-2xl border border-amber-200/60 font-mono text-xs text-slate-800 space-y-3">
                 <div class="text-center">
                     <h3 class="font-extrabold text-base uppercase">☕ KOPIKITA ESPRESSO</h3>
@@ -471,6 +509,7 @@
                 <div class="border-b border-dashed border-slate-400 my-2"></div>
                 <div class="flex justify-between"><span>No. Nota: <strong id="receiptOrderNum"></strong></span><span id="receiptDate"></span></div>
                 <div class="flex justify-between"><span>Pelanggan: <strong id="receiptCustomer"></strong></span><span>Status: <strong class="text-amber-600" id="receiptStatus">PENDING</strong></span></div>
+                <div class="flex justify-between"><span>Kasir: <strong id="receiptCashierName">-</strong></span></div>
                 <div class="border-b border-dashed border-slate-400 my-2"></div>
                 <div id="receiptItemsList" class="space-y-1"></div>
                 <div class="border-b border-dashed border-slate-400 my-2"></div>
@@ -483,10 +522,15 @@
                 <p>Silakan lakukan pembayaran langsung ke kasir dan tunjukkan struk/nota ini untuk memproses pesanan Anda.</p>
             </div>
 
-            <!-- Tombol Unduh Struk -->
-            <button onclick="downloadReceiptImage()" class="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm cursor-pointer">
-                <i class="fa-solid fa-download"></i> Unduh Struk (PNG)
-            </button>
+            <!-- Tombol Cetak & Unduh Struk -->
+            <div class="grid grid-cols-2 gap-2">
+                <button onclick="window.print()" class="w-full py-2.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm cursor-pointer">
+                    <i class="fa-solid fa-print"></i> Cetak Struk
+                </button>
+                <button onclick="downloadReceiptImage()" class="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm cursor-pointer">
+                    <i class="fa-solid fa-download"></i> Unduh PNG
+                </button>
+            </div>
 
             <button onclick="closeReceiptModal()" class="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition cursor-pointer">
                 Tutup
@@ -559,6 +603,9 @@
         
         let menuItems = [], ordersList = [], activeCart = [], currentRole = 'customer', pendingRoleSwitch = null, activeCategoryFilter = 'Semua', currentActiveOrder = null;
         let reportPeriodMode = 'harian'; 
+        let currentCashierName = localStorage.getItem('kopikita_cashier_name') || 'Kasir 1';
+        let isResetArmed = false;
+        let resetTimer = null;
         const ROLE_PINS = { kasir: '1234', koki: '4321', admin: '9999' };
 
         let tableList = JSON.parse(localStorage.getItem('kopikita_tables')) || [
@@ -607,8 +654,46 @@
             loadDataFromGAS();
             renderTableSelectOptions();
             renderBannerOnUI();
+            
+            const cashierInput = document.getElementById('cashierNameInput');
+            if (cashierInput) cashierInput.value = currentCashierName;
+
             setInterval(loadDataFromGAS, 15000);
         };
+
+        function saveCashierName(val) {
+            currentCashierName = val.trim() || 'Kasir 1';
+            localStorage.setItem('kopikita_cashier_name', currentCashierName);
+        }
+
+        // FUNGSI DUA LANGKAH RESET SHIFT KASIR
+        function handleResetShift() {
+            const btnText = document.getElementById('resetBtnText');
+            const btn = document.getElementById('resetShiftBtn');
+            
+            if (!isResetArmed) {
+                isResetArmed = true;
+                alert('⚠️ PERHATIAN:\n\nAnda akan mereset tampilan pesanan di panel kasir untuk memulai shift baru.\n\n• Data transaksi di Panel Admin & Google Sheets TETAP AMAN.\n\nKlik tombol Reset sekali lagi untuk mengonfirmasi.');
+                btn.className = "px-3.5 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-sm cursor-pointer animate-pulse";
+                btnText.innerText = "⚠️ Konfirmasi Reset?";
+                
+                resetTimer = setTimeout(() => {
+                    isResetArmed = false;
+                    btn.className = "px-3.5 py-2 bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-sm cursor-pointer";
+                    btnText.innerText = "Reset Shift Kasir";
+                }, 7000);
+            } else {
+                clearTimeout(resetTimer);
+                isResetArmed = false;
+                btn.className = "px-3.5 py-2 bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-sm cursor-pointer";
+                btnText.innerText = "Reset Shift Kasir";
+                
+                // Set shift reset time to now
+                localStorage.setItem('kopikita_shift_reset_time', new Date().toISOString());
+                alert('✅ Shift berhasil direset! Daftar pesanan kasir dimulai dari awal.');
+                renderKasirOrders();
+            }
+        }
 
         async function loadDataFromGAS() {
             try {
@@ -957,6 +1042,7 @@
             document.getElementById('receiptDate').innerText = order.date ? new Date(order.date).toLocaleTimeString('id-ID', { hour: '2-digit', minute:'2-digit' }) : new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute:'2-digit' });
             document.getElementById('receiptCustomer').innerText = `${order.customerName} (${order.tableNumber})`;
             document.getElementById('receiptStatus').innerText = order.paymentStatus || 'PENDING';
+            document.getElementById('receiptCashierName').innerText = currentCashierName;
             document.getElementById('receiptItemsList').innerHTML = order.items.map(i => `<div class="flex justify-between"><span>${i.qty}x ${i.nama || i.name}</span><span>${formatRp(i.harga * i.qty)}</span></div>`).join('');
             document.getElementById('receiptGrandTotal').innerText = formatRp(order.totalGross);
             
@@ -970,7 +1056,6 @@
             document.getElementById('receiptModal').classList.remove('hidden');
         }
 
-        // Fungsionalitas Kasir membuka struk pesanan tertentu
         function openKasirReceipt(orderId) {
             const order = ordersList.find(o => o.id === orderId);
             if (!order) return;
@@ -991,16 +1076,33 @@
 
         function renderKasirOrders() {
             const container = document.getElementById('kasirOrdersList');
-            if (ordersList.length === 0) { container.innerHTML = `<p class="text-xs text-slate-400 text-center py-6">Belum ada pesanan.</p>`; return; }
-            const active = ordersList.filter(o => o.orderStatus !== 'Selesai');
-            const completed = ordersList.filter(o => o.orderStatus === 'Selesai');
-            const todayRev = ordersList.filter(o => o.paymentStatus === 'Lunas').reduce((acc, o) => acc + o.totalGross, 0);
+            const shiftResetTime = localStorage.getItem('kopikita_shift_reset_time');
+            
+            // Filter orders based on shift reset time
+            const visibleOrders = ordersList.filter(o => {
+                if (!shiftResetTime) return true;
+                const orderTime = new Date(o.date).getTime();
+                const resetTime = new Date(shiftResetTime).getTime();
+                return isNaN(orderTime) || orderTime >= resetTime;
+            });
+
+            if (visibleOrders.length === 0) { 
+                container.innerHTML = `<p class="text-xs text-slate-400 text-center py-6">Belum ada pesanan pada shift ini.</p>`; 
+                document.getElementById('kasirActiveCount').innerText = 0;
+                document.getElementById('kasirCompletedCount').innerText = 0;
+                document.getElementById('kasirTodayRevenue').innerText = formatRp(0);
+                return; 
+            }
+
+            const active = visibleOrders.filter(o => o.orderStatus !== 'Selesai');
+            const completed = visibleOrders.filter(o => o.orderStatus === 'Selesai');
+            const todayRev = visibleOrders.filter(o => o.paymentStatus === 'Lunas').reduce((acc, o) => acc + o.totalGross, 0);
 
             document.getElementById('kasirActiveCount').innerText = active.length;
             document.getElementById('kasirCompletedCount').innerText = completed.length;
             document.getElementById('kasirTodayRevenue').innerText = formatRp(todayRev);
 
-            container.innerHTML = ordersList.map(order => `
+            container.innerHTML = visibleOrders.map(order => `
                 <div class="border rounded-xl p-4 bg-white flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm">
                     <div class="space-y-1">
                         <div class="flex items-center gap-2">
@@ -1011,13 +1113,45 @@
                         <div class="text-xs text-slate-500">${order.customerName} • <strong>${order.tableNumber}</strong></div>
                         <div class="text-xs text-slate-700 font-semibold">Items: ${order.items.map(i => `${i.qty}x ${i.nama || i.name}`).join(', ')}</div>
                     </div>
-                    <div class="flex items-center gap-2 flex-wrap justify-end">
+                    <div class="flex items-center gap-3 flex-wrap justify-end">
+                        <div class="text-right mr-1">
+                            <div class="text-[10px] text-slate-400">Total</div>
+                            <div class="text-sm font-black text-slate-900">${formatRp(order.totalGross)}</div>
+                        </div>
                         <button onclick="openKasirReceipt('${order.id}')" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-sm">
                             <i class="fa-solid fa-receipt"></i> Struk
                         </button>
                         ${order.paymentStatus !== 'Lunas' ? `<button onclick="markPaymentPaid('${order.id}')" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold cursor-pointer shadow-sm">Konfirmasi Lunas</button>` : ''}
                     </div>
                 </div>`).join('');
+        }
+
+        // FUNGSI EXPORT CSV KHUSUS KASIR (SESUAI SHIFT AKTIF)
+        function exportKasirCSV() {
+            const shiftResetTime = localStorage.getItem('kopikita_shift_reset_time');
+            const visibleOrders = ordersList.filter(o => {
+                if (!shiftResetTime) return true;
+                const orderTime = new Date(o.date).getTime();
+                const resetTime = new Date(shiftResetTime).getTime();
+                return isNaN(orderTime) || orderTime >= resetTime;
+            });
+
+            if (visibleOrders.length === 0) {
+                alert('Tidak ada data pesanan pada shift ini untuk diexport!');
+                return;
+            }
+            let csvContent = "data:text/csv;charset=utf-8,Order ID,Waktu,Pelanggan,Meja,Daftar Item,Total (Rp),Metode Bayar,Status Bayar,Status Dapur\n";
+            visibleOrders.forEach(o => {
+                const itemsStr = o.items.map(i => `${i.qty}x ${i.nama || i.name} (@${i.harga})`).join(' | ');
+                csvContent += `${o.id},${o.date},"${o.customerName}",${o.tableNumber},"${itemsStr}",${o.totalGross},${o.paymentMethod},${o.paymentStatus},${o.orderStatus}\n`;
+            });
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement('a');
+            link.setAttribute('href', encodedUri);
+            link.setAttribute('download', `Rekap_Shift_${currentCashierName.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         }
 
         async function markPaymentPaid(orderId) {
