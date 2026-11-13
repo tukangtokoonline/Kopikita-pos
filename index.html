@@ -422,15 +422,21 @@
         </div>
     </div>
 
-    <!-- MODAL ZOOM GAMBAR & DESKRIPSI -->
+    <!-- MODAL ZOOM GAMBAR, HARGA & TOMBOL TAMBAH KE KERANJANG -->
     <div id="imageModal" class="fixed inset-0 bg-black/90 backdrop-blur-md z-50 overflow-y-auto flex items-center justify-center p-4 pb-48 hidden" onclick="closeImageModal()">
-        <div class="relative max-w-lg w-full text-center my-6 mb-40 space-y-3 bg-slate-900 p-5 rounded-2xl border border-slate-800 shadow-2xl" onclick="event.stopPropagation()">
+        <div class="relative max-w-lg w-full text-center my-6 mb-40 space-y-3 bg-slate-900 p-5 rounded-2xl border border-slate-800 shadow-2xl text-white" onclick="event.stopPropagation()">
             <button onclick="closeImageModal()" class="absolute -top-10 right-0 text-white text-xl font-bold px-2.5 py-1 bg-white/20 rounded-full hover:bg-white/30 cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
-            <img id="imageModalTarget" src="" class="max-h-[50vh] w-auto mx-auto rounded-xl object-contain shadow-md">
-            <div class="text-left space-y-1 pt-1">
-                <h3 id="imageModalTitle" class="font-black text-white text-base"></h3>
+            <img id="imageModalTarget" src="" class="max-h-[45vh] w-auto mx-auto rounded-xl object-contain shadow-md">
+            <div class="text-left space-y-2 pt-1">
+                <div class="flex items-center justify-between">
+                    <h3 id="imageModalTitle" class="font-black text-base text-white"></h3>
+                    <span id="imageModalPrice" class="font-extrabold text-amber-400 text-sm"></span>
+                </div>
                 <p id="imageModalDesc" class="text-xs text-slate-300 leading-relaxed"></p>
             </div>
+            <button id="imageModalAddBtn" onclick="addCurrentModalToCart()" class="w-full py-3 bg-amber-500 hover:bg-amber-600 text-slate-950 font-extrabold rounded-xl text-xs shadow-md transition cursor-pointer flex items-center justify-center gap-2">
+                <i class="fa-solid fa-cart-plus"></i> Tambah ke Keranjang
+            </button>
         </div>
     </div>
 
@@ -548,7 +554,7 @@
         </div>
     </div>
 
-    <!-- MODAL TAMBAH / EDIT MENU -->
+    <!-- MODAL TAMBAH / EDIT MENU (DENGAN INPUT DISKON %) -->
     <div id="menuFormModal" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 overflow-y-auto flex items-start justify-center p-2 sm:p-4 pb-48 hidden">
         <div class="bg-white rounded-2xl max-w-md w-full my-6 mb-40 shadow-2xl flex flex-col p-5 space-y-4 relative">
             <div class="sticky top-0 bg-white border-b pb-3 flex justify-between items-center z-10">
@@ -580,7 +586,7 @@
                         <input type="number" id="menuStock" required value="50" class="w-full p-2.5 border rounded-lg">
                     </div>
                 </div>
-                <div class="grid grid-cols-2 gap-2">
+                <div class="grid grid-cols-3 gap-2">
                     <div>
                         <label class="block font-bold mb-1">Modal (HPP)</label>
                         <input type="number" id="menuHpp" required class="w-full p-2.5 border rounded-lg font-bold">
@@ -588,6 +594,10 @@
                     <div>
                         <label class="block font-bold mb-1">Harga Jual</label>
                         <input type="number" id="menuPrice" required class="w-full p-2.5 border rounded-lg font-bold">
+                    </div>
+                    <div>
+                        <label class="block font-bold mb-1">Diskon (%)</label>
+                        <input type="number" id="menuDiscount" required value="0" min="0" max="100" class="w-full p-2.5 border rounded-lg font-bold">
                     </div>
                 </div>
                 <div>
@@ -614,6 +624,7 @@
         let menuItems = [], ordersList = [], activeCart = [], currentRole = 'customer', pendingRoleSwitch = null, activeCategoryFilter = 'Semua', currentActiveOrder = null;
         let reportPeriodMode = 'harian'; 
         let currentCashierName = localStorage.getItem('kopikita_cashier_name') || 'Kasir 1';
+        let currentModalItemId = null;
         let isResetArmed = false;
         let resetTimer = null;
         const ROLE_PINS = { kasir: '1234', koki: '4321', admin: '9999' };
@@ -938,12 +949,26 @@
         function openImageModal(itemId) {
             const item = menuItems.find(m => m.id === itemId);
             if (!item) return;
+            currentModalItemId = itemId;
             document.getElementById('imageModalTarget').src = item.image;
             document.getElementById('imageModalTitle').innerText = item.name;
             document.getElementById('imageModalDesc').innerText = item.description || 'Tidak ada deskripsi tambahan.';
+            const discountedPrice = Math.round(item.price * (1 - item.discountPercent / 100));
+            document.getElementById('imageModalPrice').innerText = formatRp(discountedPrice);
             document.getElementById('imageModal').classList.remove('hidden');
         }
-        function closeImageModal() { document.getElementById('imageModal').classList.add('hidden'); }
+
+        function closeImageModal() { 
+            currentModalItemId = null;
+            document.getElementById('imageModal').classList.add('hidden'); 
+        }
+
+        function addCurrentModalToCart() {
+            if (currentModalItemId) {
+                addToCart(currentModalItemId);
+                closeImageModal();
+            }
+        }
 
         function addToCart(itemId) {
             const item = menuItems.find(m => m.id === itemId);
@@ -1243,6 +1268,7 @@
             document.getElementById('menuStock').value = item.stock;
             document.getElementById('menuHpp').value = item.hpp;
             document.getElementById('menuPrice').value = item.price;
+            document.getElementById('menuDiscount').value = item.discountPercent;
             document.getElementById('menuImage').value = item.image;
             document.getElementById('menuDesc').value = item.description || '';
             document.getElementById('menuFormModal').classList.remove('hidden');
@@ -1259,7 +1285,7 @@
                 kategori: document.getElementById('menuCategory').value.trim(),
                 modal: Number(document.getElementById('menuHpp').value) || 0,
                 harga: Number(document.getElementById('menuPrice').value) || 0,
-                diskon: 0, 
+                diskon: Number(document.getElementById('menuDiscount').value) || 0, 
                 stok: Number(document.getElementById('menuStock').value) || 0, 
                 deskripsi: document.getElementById('menuDesc').value.trim()
             };
