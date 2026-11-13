@@ -935,6 +935,14 @@
             if (filtered.length === 0) { grid.innerHTML = `<div class="col-span-full text-center py-10 text-slate-400 text-xs">Memuat menu...</div>`; return; }
             grid.innerHTML = filtered.map(item => {
                 const discountedPrice = Math.round(item.price * (1 - item.discountPercent / 100));
+                const priceDisplay = item.discountPercent > 0 ? `
+                    <div class="flex flex-col">
+                        <span class="text-[10px] text-slate-400 line-through leading-none">${formatRp(item.price)}</span>
+                        <span class="text-xs sm:text-sm font-extrabold text-rose-600">${formatRp(discountedPrice)}</span>
+                    </div>
+                ` : `
+                    <div class="text-xs sm:text-sm font-extrabold text-slate-900">${formatRp(item.price)}</div>
+                `;
                 return `
                     <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm flex flex-col justify-between hover:shadow-md transition">
                         <div>
@@ -949,7 +957,7 @@
                             </div>
                         </div>
                         <div class="p-3 pt-0 flex items-center justify-between mt-2">
-                            <div class="text-xs sm:text-sm font-extrabold text-slate-900">${formatRp(discountedPrice)}</div>
+                            ${priceDisplay}
                             <button onclick="addToCart('${item.id}')" class="w-8 h-8 rounded-xl bg-slate-900 text-white flex items-center justify-center font-bold text-xs shadow-sm"><i class="fa-solid fa-plus"></i></button>
                         </div>
                     </div>`;
@@ -963,8 +971,15 @@
             document.getElementById('imageModalTarget').src = item.image;
             document.getElementById('imageModalTitle').innerText = item.name;
             document.getElementById('imageModalDesc').innerText = item.description || 'Tidak ada deskripsi tambahan.';
+            
             const discountedPrice = Math.round(item.price * (1 - item.discountPercent / 100));
-            document.getElementById('imageModalPrice').innerText = formatRp(discountedPrice);
+            const modalPriceDisplay = item.discountPercent > 0 ? `
+                <span class="text-xs text-slate-400 line-through mr-1.5">${formatRp(item.price)}</span>
+                <span class="text-amber-400 font-extrabold text-sm">${formatRp(discountedPrice)}</span>
+            ` : `
+                <span class="text-amber-400 font-extrabold text-sm">${formatRp(item.price)}</span>
+            `;
+            document.getElementById('imageModalPrice').innerHTML = modalPriceDisplay;
             document.getElementById('imageModal').classList.remove('hidden');
         }
 
