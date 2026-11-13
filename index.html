@@ -417,10 +417,15 @@
         </div>
     </div>
 
+    <!-- MODAL ZOOM GAMBAR & DESKRIPSI -->
     <div id="imageModal" class="fixed inset-0 bg-black/90 backdrop-blur-md z-50 overflow-y-auto flex items-center justify-center p-4 pb-48 hidden" onclick="closeImageModal()">
-        <div class="relative max-w-3xl w-full text-center my-6 mb-40" onclick="event.stopPropagation()">
-            <button onclick="closeImageModal()" class="absolute -top-12 right-0 text-white text-2xl font-bold">Close</button>
-            <img id="imageModalTarget" src="" class="max-h-[80vh] w-auto mx-auto rounded-2xl shadow-2xl object-contain">
+        <div class="relative max-w-lg w-full text-center my-6 mb-40 space-y-3 bg-slate-900 p-5 rounded-2xl border border-slate-800 shadow-2xl" onclick="event.stopPropagation()">
+            <button onclick="closeImageModal()" class="absolute -top-10 right-0 text-white text-xl font-bold px-2.5 py-1 bg-white/20 rounded-full hover:bg-white/30 cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
+            <img id="imageModalTarget" src="" class="max-h-[50vh] w-auto mx-auto rounded-xl object-contain shadow-md">
+            <div class="text-left space-y-1 pt-1">
+                <h3 id="imageModalTitle" class="font-black text-white text-base"></h3>
+                <p id="imageModalDesc" class="text-xs text-slate-300 leading-relaxed"></p>
+            </div>
         </div>
     </div>
 
@@ -666,7 +671,6 @@
             localStorage.setItem('kopikita_cashier_name', currentCashierName);
         }
 
-        // FUNGSI DUA LANGKAH RESET SHIFT KASIR
         function handleResetShift() {
             const btnText = document.getElementById('resetBtnText');
             const btn = document.getElementById('resetShiftBtn');
@@ -688,7 +692,6 @@
                 btn.className = "px-3.5 py-2 bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-sm cursor-pointer";
                 btnText.innerText = "Reset Shift Kasir";
                 
-                // Set shift reset time to now
                 localStorage.setItem('kopikita_shift_reset_time', new Date().toISOString());
                 alert('✅ Shift berhasil direset! Daftar pesanan kasir dimulai dari awal.');
                 renderKasirOrders();
@@ -904,7 +907,7 @@
                 return `
                     <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm flex flex-col justify-between hover:shadow-md transition">
                         <div>
-                            <div class="relative h-36 bg-slate-100 cursor-pointer overflow-hidden group" onclick="openImageModal('${item.image}', '${item.name}')">
+                            <div class="relative h-36 bg-slate-100 cursor-pointer overflow-hidden group" onclick="openImageModal('${item.id}')">
                                 <img src="${item.image}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
                                 ${item.discountPercent > 0 ? `<span class="absolute top-2 left-2 bg-rose-600 text-white font-extrabold text-[10px] px-2 py-0.5 rounded-md">PROMO ${item.discountPercent}%</span>` : ''}
                             </div>
@@ -922,8 +925,12 @@
             }).join('');
         }
 
-        function openImageModal(url, caption) {
-            document.getElementById('imageModalTarget').src = url;
+        function openImageModal(itemId) {
+            const item = menuItems.find(m => m.id === itemId);
+            if (!item) return;
+            document.getElementById('imageModalTarget').src = item.image;
+            document.getElementById('imageModalTitle').innerText = item.name;
+            document.getElementById('imageModalDesc').innerText = item.description || 'Tidak ada deskripsi tambahan.';
             document.getElementById('imageModal').classList.remove('hidden');
         }
         function closeImageModal() { document.getElementById('imageModal').classList.add('hidden'); }
@@ -1078,7 +1085,6 @@
             const container = document.getElementById('kasirOrdersList');
             const shiftResetTime = localStorage.getItem('kopikita_shift_reset_time');
             
-            // Filter orders based on shift reset time
             const visibleOrders = ordersList.filter(o => {
                 if (!shiftResetTime) return true;
                 const orderTime = new Date(o.date).getTime();
@@ -1126,7 +1132,6 @@
                 </div>`).join('');
         }
 
-        // FUNGSI EXPORT CSV KHUSUS KASIR (SESUAI SHIFT AKTIF)
         function exportKasirCSV() {
             const shiftResetTime = localStorage.getItem('kopikita_shift_reset_time');
             const visibleOrders = ordersList.filter(o => {
